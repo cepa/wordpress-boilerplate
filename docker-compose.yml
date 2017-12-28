@@ -1,0 +1,45 @@
+version: '2.1'
+
+services:
+
+  mysql:
+    container_name: mysql
+    build: ./mysql
+    volumes:
+      - /srv/wordpress-boilerplate/mysql/data:/var/lib/mysql
+    restart: always
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "--silent"]
+      interval: 5s
+      timeout: 5s
+      retries: 3
+    environment:
+      MYSQL_ROOT_PASSWORD: "${MYSQL_ROOT_PASSWORD}"
+
+  wordpress:
+    container_name: wordpress
+    build: ./wordpress
+    restart: always
+    depends_on:
+      - mysql
+    restart: always
+    volumes:
+      - /srv/wordpress-boilerplate/wordpress/wp-content:/var/www/html/wp-content
+    environment:
+      WORDPRESS_DB_HOST:      "mysql"
+      WORDPRESS_DB_NAME:      "${WORDPRESS_DB_NAME}"
+      WORDPRESS_DB_USER:      "${WORDPRESS_DB_USER}"
+      WORDPRESS_DB_PASSWORD:  "${WORDPRESS_DB_PASSWORD}"
+
+  nginx:
+    container_name: nginx
+    build: ./nginx
+    restart: always
+    depends_on:
+      - wordpress
+    ports:
+      - "80:80"
+    volumes_from:
+      - wordpress:ro
+    volumes:
+      - ./nginx/conf/sites:/etc/nginx/sites
